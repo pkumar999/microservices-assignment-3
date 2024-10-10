@@ -28,8 +28,7 @@ public class ProductService {
             if (isActive) {
                 return mapToDTO(productRepository.findByActive(true));
             }
-            mapToDTO(productRepository.findAll());
-            return Collections.emptyList();
+            return mapToDTO(productRepository.findAll());
         } catch (Exception e) {
             log.error("Failed to retrieve products. Exception:", e);
             throw new DatabaseErrorException("Failed to retrieve products.", e);
@@ -43,6 +42,6 @@ public class ProductService {
         }
         return products.stream().map(product -> ProductDTO.builder().code(product.getCode()).name(product.getName())
                 .unitCost(product.getUnitCost()).typeCode(product.getTypeCode())
-                .universalProductCode(product.getUniversalProductCode()).active(false).build()).collect(Collectors.toList());
+                .universalProductCode(product.getUniversalProductCode()).active(product.isActive()).build()).collect(Collectors.toList());
     }
 }

@@ -2,6 +2,7 @@ package com.wsu.workorderproservice.service;
 
 import com.wsu.workorderproservice.dto.TechnicianDTO;
 import com.wsu.workorderproservice.exception.DatabaseErrorException;
+import com.wsu.workorderproservice.exception.InvalidRequestException;
 import com.wsu.workorderproservice.model.State;
 import com.wsu.workorderproservice.model.Technician;
 import com.wsu.workorderproservice.repository.TechnicianRepository;
@@ -17,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import static com.wsu.workorderproservice.utilities.CommonUtils.sort;
@@ -54,6 +56,25 @@ public class TechnicianService {
     }
 
     /**
+     * Creates a new Technician entity when given a valid TechnicianDTO.
+     * @param technicianDTO - used to create new Technician object.
+     * @return - returns the saved TechnicianDTO object from the persisted Technician entity.
+     */
+    public TechnicianDTO save(TechnicianDTO technicianDTO) {
+        if (technicianRepository.existsById(technicianDTO.getCode())) {
+            throw new InvalidRequestException("Technician already exist with this code.");
+        }
+        try {
+            Technician technician = mapToEntity(technicianDTO);
+            technician.setCode(technicianDTO.getCode());
+            return mapToDto(technicianRepository.save(technician));
+        } catch (Exception e) {
+            log.error("Failed to add technician. technician code:{}, Exception:{}", technicianDTO.getCode(), e);
+            throw new DatabaseErrorException("Failed to add technician.", e);
+        }
+    }
+
+    /**
      * This method used to convert workPermits comma separated Strings to collection of State
      * @param workPermits - comma separated Strings
      * @return - collection of State [We are using Set to keep unique State values]
@@ -64,6 +85,28 @@ public class TechnicianService {
         }
         List<String> workPermitStates = Arrays.asList(workPermits.split(","));
         return workPermitStates.stream().map(state -> State.builder().code(state).build()).collect(Collectors.toSet());
+    }
+
+    /**
+     * This method used to convert DTO to entity model class.
+     */
+    private Technician mapToEntity(TechnicianDTO technicianDTO) {
+        Technician technician = Technician.builder().firstName(technicianDTO.getFirstName())
+                .lastName(technicianDTO.getLastName()).type(technicianDTO.getType()).build();
+        if (!CollectionUtils.isEmpty(technicianDTO.getWorkPermits())) {
+            technician.setWorkPermits(technicianDTO.getWorkPermits());
+        }
+        return technician;
+    }
+
+    /**
+     * This method used to convert Entity model class to DTO class.
+     */
+    private TechnicianDTO mapToDto(Technician technician) {
+        return  technician != null ? TechnicianDTO.builder().code(technician.getCode())
+                .firstName(technician.getFirstName())
+                .lastName(technician.getLastName()).type(technician.getType())
+                .workPermits(technician.getWorkPermits()).build() : null;
     }
 
 }

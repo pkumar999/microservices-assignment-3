@@ -2,14 +2,20 @@ package com.wsu.workorderproservice.controller;
 
 import com.wsu.workorderproservice.dto.ServiceResponseDTO;
 import com.wsu.workorderproservice.dto.TechnicianDTO;
+import com.wsu.workorderproservice.exception.InvalidRequestException;
 import com.wsu.workorderproservice.service.TechnicianService;
 import com.wsu.workorderproservice.utilities.Constants;
 import java.util.Map;
+
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -54,5 +60,23 @@ public class TechnicianController {
         return new ResponseEntity<>(ServiceResponseDTO.builder().meta(Map.of(MESSAGE, "Successfully retrieved technicians.", PAGE_COUNT,
                         technicianDTOPage.getTotalPages(), RESULT_COUNT, technicianDTOPage.getTotalElements()))
                 .data(technicianDTOPage.getContent()).build(), HttpStatus.OK);
+    }
+
+    /**
+     * This endpoint used for create new technician in database.
+     * @param technicianDTO - payload that contains technician information
+     * @return - ServiceResponseDTO which include HTTP status and technician details.
+     */
+    //@PostMapping is a composed annotation that acts as a shortcut for @RequestMapping(method = RequestMethod. POST)
+    //@RequestBody annotation is applicable to handler methods of Spring controllers.
+    // This annotation indicates that Spring should deserialize a request body into an object. This object is passed as a handler method parameter.
+    //@Valid annotation is a standard Java annotation for bean validation
+    @PostMapping
+    public ResponseEntity<ServiceResponseDTO> save(@RequestBody @Valid TechnicianDTO technicianDTO) {
+        if (!StringUtils.hasLength(technicianDTO.getCode())) {
+            throw new InvalidRequestException("Technician code must be provided.");
+        }
+        return new ResponseEntity<>(ServiceResponseDTO.builder().meta(Map.of(MESSAGE, "Successfully added technician"))
+                .data(technicianService.save(technicianDTO)).build(), HttpStatus.CREATED);
     }
 }
